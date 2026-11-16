@@ -18,6 +18,9 @@ public/                  Lo que se publica en la web
   js/campus.js           Campus privado: menú por rol e Inicio
   js/gestion.js          Pantallas de gestión: Solicitudes, Alumnos, Promociones, Profesores, Mi cuenta
   js/datos.js            Lectura y escritura en Firestore (altas de cuentas incluidas)
+  js/preguntas.js        Pantalla Preguntas: banco de preguntas y temario
+  js/banco-datos.js      Datos del temario, preguntas y respuestas
+  js/temario.js          Temario oficial (45 temas, 3 bloques) que se precarga
   js/util.js             Utilidades e iconos
   img/                   Logo, icono y fotos de la academia (con su permiso)
 firestore.rules          Reglas de seguridad de la base de datos
@@ -43,6 +46,9 @@ firebase.json            Configuración de Firebase Hosting
 - `cursos/{id}`: `{ nombre, descripcion, precio, creado }` — lectura pública. `precio: null` se muestra como "XXX €".
 - `solicitudes/{id}`: `{ cursoId, cursoNombre, nombre, apellidos, email, uid?, estado: "pendiente", aceptaPrivacidad, creado }`
   — cualquiera puede crearla (formulario público, con validación en las reglas); solo los profesores la leen.
+- `temas/{id}`: `{ numero, bloque: "A" | "B" | "C", titulo }` — se precarga el temario oficial la primera vez.
+- `preguntas/{id}`: `{ enunciado, opciones: [a, b, c], temas: [ids], dificultad: "facil" | "media" | "dificil", creado, creadoPor, actualizado }`
+- `respuestas/{id}` (mismo id que la pregunta): `{ correcta: 0 | 1 | 2, explicacion }` — separada para poder cerrarla al corregir en servidor.
 
 ## Decisiones
 
@@ -58,13 +64,17 @@ firebase.json            Configuración de Firebase Hosting
 - Las altas de cuentas se hacen desde el navegador con una segunda conexión a Firebase (sin cerrar la sesión del profesor)
   y se envía el email de "restablecer contraseña" para que el usuario cree la suya.
 - Tipografía: Montserrat (titulares y marca) + Source Sans 3 (texto).
+- Preguntas: 3 opciones, una correcta, explicación **obligatoria**, dificultad y **uno o varios temas**.
+  Las editan y borran cualquier profesor o el administrador. Borrar una pregunta la quita también de los tests (paso 5).
+- Temario editable por profesores y administrador. Un tema solo se puede eliminar si no tiene preguntas.
+- Tipos de test previstos (paso 5): generales (todo el temario), por bloque y por tema.
 
 ## Plan de la v1
 
 1. ✅ Base: login con roles e imagen de marca
 2. ✅ Web pública (Inicio, Cursos con inscripción por solicitud, privacidad en borrador)
 3. ✅ Roles (administrador/profesor/alumno) y gestión de promociones, solicitudes, alumnos y profesores; Mi cuenta
-4. Temario precargado y banco de preguntas
+4. ✅ Temario precargado y banco de preguntas
 5. Tests cerrados (temporizador, corrección A − E/2, nota sobre 10, revisión)
 6. Importación de preguntas desde Excel
 7. Panel del administrador (alumnos con acceso en los últimos 1/3/6/12 meses, altas del mes, nº de profesores, boceto de ingresos)
@@ -89,6 +99,8 @@ firebase.json            Configuración de Firebase Hosting
 
 ## Pendientes generales
 
+- **Psicotécnicos** (fuera de la v1).
+- **Imágenes en las preguntas** (requiere activar Firebase Storage).
 - **RGPD:** sustituir la política de privacidad en BORRADOR por el texto revisado por la academia/asesor legal
   (razón social, NIF, base legal, plazos) y firmar contrato de encargado del tratamiento.
 - **Precio real** del curso de ejemplo y resto de cursos.

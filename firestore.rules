@@ -98,6 +98,36 @@ service cloud.firestore {
       allow read, update, delete: if esStaff();
     }
 
+    // ---------- Temario: temas/{id} ----------
+    // { numero, bloque, titulo }. Lo leen todos los usuarios con sesión; lo edita el personal.
+    match /temas/{id} {
+      allow read: if conectado();
+      allow write: if esStaff();
+    }
+
+    // ---------- Banco de preguntas: preguntas/{id} ----------
+    // { enunciado, opciones: [3], temas: [ids], dificultad, creado, creadoPor, actualizado }
+    // De momento solo el personal (en el paso 5 los alumnos podrán leer las de sus tests).
+    match /preguntas/{id} {
+      allow read: if esStaff();
+      allow create, update: if esStaff()
+        && texto(request.resource.data.enunciado, 1000)
+        && request.resource.data.opciones is list && request.resource.data.opciones.size() == 3
+        && request.resource.data.temas is list && request.resource.data.temas.size() > 0
+        && request.resource.data.dificultad in ['facil', 'media', 'dificil'];
+      allow delete: if esStaff();
+    }
+
+    // ---------- Respuestas: respuestas/{id} (mismo id que la pregunta) ----------
+    // { correcta: 0|1|2, explicacion }. Separadas para poder cerrarlas al corregir en servidor (opción B).
+    match /respuestas/{id} {
+      allow read: if esStaff();
+      allow create, update: if esStaff()
+        && request.resource.data.correcta in [0, 1, 2]
+        && texto(request.resource.data.explicacion, 2000);
+      allow delete: if esStaff();
+    }
+
     // Todo lo demás, cerrado por defecto hasta que lo construyamos.
     match /{document=**} {
       allow read, write: if false;

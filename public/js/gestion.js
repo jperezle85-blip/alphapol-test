@@ -26,7 +26,7 @@ export function aviso(texto, ok = true) {
 }
 
 /** Abre una ventana modal. Devuelve { el, cerrar }. */
-function modal(titulo, cuerpo, { ancho = 520 } = {}) {
+export function modal(titulo, cuerpo, { ancho = 520 } = {}) {
   const fondo = document.createElement("div");
   fondo.className = "modal-fondo";
   fondo.innerHTML = `
@@ -45,7 +45,7 @@ function modal(titulo, cuerpo, { ancho = 520 } = {}) {
   return { el: fondo, cerrar };
 }
 
-function confirmar(titulo, texto, { boton = "Confirmar", peligro = false } = {}) {
+export function confirmar(titulo, texto, { boton = "Confirmar", peligro = false } = {}) {
   return new Promise((resolve) => {
     const m = modal(titulo, `
       <p class="modal-texto">${texto}</p>

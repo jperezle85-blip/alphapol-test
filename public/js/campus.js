@@ -5,6 +5,7 @@ import { contarPendientes, esStaff, nombreCompleto } from "./datos.js";
 import {
   vistaSolicitudes, vistaAlumnos, vistaPromociones, vistaProfesores, vistaMiCuenta, pintarMisCursos,
 } from "./gestion.js";
+import { vistaPreguntas } from "./preguntas.js";
 
 // Secciones de cada rol. "paso" = en qué paso del plan se construye (las que aún no existen).
 const SECCIONES_STAFF = [
@@ -12,7 +13,7 @@ const SECCIONES_STAFF = [
   { id: "solicitudes", label: "Solicitudes", desc: "Aprobar o rechazar las solicitudes de inscripción enviadas desde la web." },
   { id: "alumnos", label: "Alumnos", desc: "Alta de alumnos, sus promociones y acceso a su cuenta." },
   { id: "promociones", label: "Promociones", desc: "Crear, editar y eliminar los cursos que aparecen en la web." },
-  { id: "preguntas", label: "Preguntas", paso: 4, desc: "Temario oficial (45 temas en 3 bloques) y banco de preguntas con su explicación." },
+  { id: "preguntas", label: "Preguntas", desc: "Banco de preguntas por tema y dificultad, y temario oficial (45 temas en 3 bloques)." },
   { id: "tests", label: "Tests", paso: 5, desc: "Crear tests cerrados y asignarlos a una o varias promociones." },
 ];
 const MENU = {
@@ -95,6 +96,7 @@ export function pintarCampus(root, usuario, seccion, ctx = {}) {
     case "alumnos": vistaAlumnos(vista, ctx); break;
     case "promociones": vistaPromociones(vista, ctx); break;
     case "profesores": vistaProfesores(vista, ctx); break;
+    case "preguntas": vistaPreguntas(vista, ctx); break;
     case "cuenta": vistaMiCuenta(vista, usuario); break;
     default: vista.innerHTML = vistaPendiente(s);
   }

@@ -23,6 +23,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; min-height: 100%; }
 body {
   background: radial-gradient(1200px 700px at 15% -10%, var(--azul-600), transparent 60%),
@@ -408,3 +409,58 @@ body.con-modal { overflow: hidden; }
   .dos-col, .datos { grid-template-columns: 1fr; }
   .cab-seccion > .btn { width: 100%; }
 }
+
+/* =====================================================================
+   Paso 4: banco de preguntas y temario
+   ===================================================================== */
+.pestanas { display: flex; gap: 4px; border-bottom: 1px solid var(--borde-suave); margin-bottom: 18px; overflow-x: auto; }
+.pestana { background: none; border: 0; padding: 10px 14px; color: var(--texto-2); font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.pestana:hover { color: var(--texto); }
+.pestana.activa { color: var(--oro-claro); border-bottom-color: var(--oro); }
+.herramientas select { flex: 1 1 200px; }
+
+.preg { border-radius: var(--radio); background: rgba(11, 42, 80, .35); border: 1px solid var(--borde-suave); overflow: hidden; }
+.preg-cab { width: 100%; background: none; border: 0; text-align: left; padding: 14px 18px; display: grid; gap: 8px; }
+.preg-cab:hover { background: rgba(255, 255, 255, .03); }
+.preg-cab[aria-expanded="true"] { border-bottom: 1px solid var(--borde-suave); }
+.preg-texto { font-size: 16px; color: var(--texto); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.preg-cab[aria-expanded="true"] .preg-texto { -webkit-line-clamp: unset; }
+.preg-detalle { padding: 14px 18px 16px; display: grid; gap: 14px; }
+.opciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.opciones li { display: flex; gap: 8px; align-items: baseline; padding: 9px 12px; border-radius: 9px; background: rgba(5, 15, 32, .45); border: 1px solid transparent; }
+.opciones li b { color: var(--texto-3); }
+.opciones li span { flex: 1; }
+.opciones li.correcta { border-color: rgba(127, 214, 164, .45); background: rgba(127, 214, 164, .08); }
+.opciones li em { font-style: normal; color: var(--ok); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.opciones li em svg { width: 15px; height: 15px; }
+.explicacion { padding: 12px 14px; border-left: 3px solid var(--oro); background: rgba(201, 166, 70, .06); border-radius: 0 9px 9px 0; }
+.explicacion strong { font-size: 13px; color: var(--oro-claro); letter-spacing: .3px; }
+.explicacion p { margin: 4px 0 0; color: var(--texto-2); white-space: pre-line; }
+.dif-facil { color: var(--ok); background: rgba(127, 214, 164, .08); border-color: rgba(127, 214, 164, .3); }
+.dif-media { color: var(--oro-claro); }
+.dif-dificil { color: var(--error); background: rgba(255, 138, 122, .08); border-color: rgba(255, 138, 122, .3); }
+.mas { margin: 14px auto 0; display: flex; }
+
+/* Formulario de pregunta */
+.opciones-form { gap: 10px; }
+.opcion-fila { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 10px; }
+.opcion-fila input[type="radio"] { width: 20px; height: 20px; margin: 0; accent-color: var(--ok); }
+.letra-op { font-weight: 700; color: var(--texto-2); font-size: 15px !important; }
+.segmentos { display: flex; gap: 8px; flex-wrap: wrap; }
+.segmento { position: relative; }
+.segmento input { position: absolute; opacity: 0; inset: 0; }
+.segmento span { display: inline-block; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--borde-suave); color: var(--texto-2); font-weight: 600; cursor: pointer; }
+.segmento input:checked + span { border-color: var(--oro); color: var(--oro-claro); background: rgba(201, 166, 70, .12); }
+.segmento input:focus-visible + span { outline: 2px solid var(--oro); outline-offset: 2px; }
+.temas-lista { max-height: 260px; overflow-y: auto; display: grid; gap: 10px; padding-right: 4px; }
+.temas-bloque { display: grid; gap: 4px; }
+.temas-bloque-tit { margin: 4px 0 2px; font-size: 13px; font-weight: 700; color: var(--oro-claro); letter-spacing: .3px; }
+.tema-op { font-size: 14.5px !important; }
+.tema-op b { color: var(--texto-3); margin-right: 2px; }
+
+/* Temario */
+.bloque-temario { margin-bottom: 8px; }
+.fila-tema { padding: 12px 16px; }
+.fila-tema strong { font-weight: 600; font-size: 15.5px; }
+.num-tema { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 0 6px; border-radius: 7px; background: rgba(201, 166, 70, .12); color: var(--oro-claro); font-size: 13px; font-weight: 700; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.fila-lado-h { flex-direction: row; align-items: center; }
