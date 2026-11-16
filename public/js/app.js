@@ -13,6 +13,7 @@ import {
 } from "./firebase.js";
 import { pintarInicio, pintarCursos, pintarCurso, pintarAcceso, pintarPrivacidad, invalidarCursos } from "./publico.js";
 import { pintarCampus } from "./campus.js";
+import { examen } from "./tests-alumno.js";
 import { esc } from "./util.js";
 
 const root = document.getElementById("app");
@@ -85,11 +86,24 @@ function pintarSinAcceso(email) {
 }
 
 // ---------- Arranque ----------
-window.addEventListener("hashchange", pintar);
+// Si hay un test en curso, salir de él pierde el intento: se pide confirmación.
+let hashAnterior = location.hash;
+window.addEventListener("hashchange", () => {
+  if (examen.activo) {
+    if (!confirm("Si sales ahora, perderás este intento. ¿Salir del test?")) {
+      history.replaceState(null, "", hashAnterior || "#/");
+      return;
+    }
+    examen.salir?.();
+  }
+  hashAnterior = location.hash;
+  pintar();
+});
 pintarCarga();
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
+    examen.salir?.(); // al cerrar sesión, se descarta un test en curso
     usuario = null;
     listo = true;
     return pintar();

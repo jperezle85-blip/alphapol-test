@@ -21,6 +21,9 @@ public/                  Lo que se publica en la web
   js/preguntas.js        Pantalla Preguntas: banco de preguntas y temario
   js/banco-datos.js      Datos del temario, preguntas y respuestas
   js/temario.js          Temario oficial (45 temas, 3 bloques) que se precarga
+  js/tests-datos.js      Tests, intentos, nota oficial y sincronización con el banco
+  js/tests-profesor.js   Tests del profesor: lista, creación al azar + retoques, borrador/publicado
+  js/tests-alumno.js     Tests del alumno: examen con temporizador, corrección y revisión
   js/util.js             Utilidades e iconos
   img/                   Logo, icono y fotos de la academia (con su permiso)
 firestore.rules          Reglas de seguridad de la base de datos
@@ -49,6 +52,10 @@ firebase.json            Configuración de Firebase Hosting
 - `temas/{id}`: `{ numero, bloque: "A" | "B" | "C", titulo }` — se precarga el temario oficial la primera vez.
 - `preguntas/{id}`: `{ enunciado, opciones: [a, b, c], temas: [ids], dificultad: "facil" | "media" | "dificil", creado, creadoPor, actualizado }`
 - `respuestas/{id}` (mismo id que la pregunta): `{ correcta: 0 | 1 | 2, explicacion }` — separada para poder cerrarla al corregir en servidor.
+- `tests/{id}`: `{ titulo, tipo: "general" | "bloque" | "tema", bloque?, temaId?, preguntaIds: [ids], preguntas: [copia con correcta y explicación], cursos: [ids], estado: "borrador" | "publicado", creado, creadoPor, actualizado }`
+  — el alumno hace el test leyendo **un solo documento**. Al editar/borrar una pregunta del banco se actualizan los tests que la contienen.
+- `cursos/{id}.tests`: índice de los tests **publicados** en cada promoción (así el alumno los encuentra).
+- `intentos/{id}`: `{ uid, testId, testTitulo, cursos, fecha, segundos, total, aciertos, errores, blancos, nota, aprobado, respuestas: { preguntaId: 0|1|2|-1 } }`
 
 ## Decisiones
 
@@ -67,7 +74,15 @@ firebase.json            Configuración de Firebase Hosting
 - Preguntas: 3 opciones, una correcta, explicación **obligatoria**, dificultad y **uno o varios temas**.
   Las editan y borran cualquier profesor o el administrador. Borrar una pregunta la quita también de los tests (paso 5).
 - Temario editable por profesores y administrador. Un tema solo se puede eliminar si no tiene preguntas.
-- Tipos de test previstos (paso 5): generales (todo el temario), por bloque y por tema.
+- Tests: generales (todo el temario), por bloque o por tema. Se generan **al azar** del banco y el profesor puede
+  **quitar, cambiar o añadir** preguntas. 100 preguntas por defecto; si hay menos en el banco, el test lleva las que haya.
+  Se guardan como **borrador** o se **publican** para las promociones marcadas.
+- Tiempo automático: **30 s por pregunta** (100 preguntas = 50 min). Al acabarse, se entrega solo y lo no contestado cuenta en blanco.
+- **Orden de preguntas y de opciones mezclado** en cada intento. **No se puede pausar**; si el alumno sale antes de entregar, **el intento se pierde**.
+- Nota oficial: **(aciertos − errores ÷ 2) × 10 ÷ preguntas**, mínimo 0. **Aprobado con 5.** Repeticiones ilimitadas.
+- Revisión tras entregar: todas las preguntas con la correcta, la elegida y la explicación (filtros: falladas, en blanco, acertadas).
+- El alumno ve en cada test sus intentos y su mejor nota, y en su inicio el resumen de tests hechos, aprobados y suspensos.
+- Al eliminar un test, las notas ya sacadas se conservan; al eliminar una promoción, se borran los intentos hechos en ella.
 
 ## Plan de la v1
 
@@ -75,7 +90,7 @@ firebase.json            Configuración de Firebase Hosting
 2. ✅ Web pública (Inicio, Cursos con inscripción por solicitud, privacidad en borrador)
 3. ✅ Roles (administrador/profesor/alumno) y gestión de promociones, solicitudes, alumnos y profesores; Mi cuenta
 4. ✅ Temario precargado y banco de preguntas
-5. Tests cerrados (temporizador, corrección A − E/2, nota sobre 10, revisión)
+5. ✅ Tests cerrados (temporizador, corrección A − E/2, nota sobre 10, revisión)
 6. Importación de preguntas desde Excel
 7. Panel del administrador (alumnos con acceso en los últimos 1/3/6/12 meses, altas del mes, nº de profesores, boceto de ingresos)
 

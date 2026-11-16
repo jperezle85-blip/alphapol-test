@@ -128,6 +128,42 @@ service cloud.firestore {
       allow delete: if esStaff();
     }
 
+    // ---------- Tests: tests/{id} ----------
+    // Llevan una copia de sus preguntas (con respuesta y explicación) para que el alumno lo haga
+    // leyendo un solo documento. Un alumno solo puede leer los tests PUBLICADOS de SUS promociones.
+    // (Opción A: la corrección se hace en el navegador; pendiente pasarla al servidor.)
+    match /tests/{id} {
+      allow read: if esStaff()
+        || (conectado()
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && miFicha().rol == 'alumno'
+            && miFicha().get('activo', true) == true
+            && resource.data.estado == 'publicado'
+            && resource.data.cursos.hasAny(miFicha().get('cursos', [])));
+      allow create, update: if esStaff()
+        && texto(request.resource.data.titulo, 150)
+        && request.resource.data.estado in ['borrador', 'publicado']
+        && request.resource.data.tipo in ['general', 'bloque', 'tema']
+        && request.resource.data.preguntas is list
+        && request.resource.data.cursos is list;
+      allow delete: if esStaff();
+    }
+
+    // ---------- Intentos: intentos/{id} ----------
+    // Cada alumno guarda sus propios intentos y solo ve los suyos; el personal ve todos.
+    match /intentos/{id} {
+      allow read: if conectado() && (resource.data.uid == request.auth.uid || esStaff());
+      allow create: if conectado()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.fecha == request.time
+        && request.resource.data.nota is number
+        && request.resource.data.nota >= 0 && request.resource.data.nota <= 10
+        && request.resource.data.total is int && request.resource.data.total > 0
+        && exists(/databases/$(database)/documents/tests/$(request.resource.data.testId));
+      // Solo el personal puede modificarlos o borrarlos (por ejemplo, al eliminar una promoción).
+      allow update, delete: if esStaff();
+    }
+
     // Todo lo demás, cerrado por defecto hasta que lo construyamos.
     match /{document=**} {
       allow read, write: if false;

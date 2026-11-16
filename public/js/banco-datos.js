@@ -10,6 +10,7 @@ import {
   auth, db, collection, doc, getDoc, getDocs, query, where, writeBatch, serverTimestamp,
 } from "./firebase.js";
 import { TEMARIO_OFICIAL } from "./temario.js";
+import { sincronizarPregunta, quitarPreguntaDeTests } from "./tests-datos.js";
 
 const lista = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 const idTema = (n) => `tema-${String(n).padStart(2, "0")}`;
@@ -68,11 +69,14 @@ export async function guardarPregunta(id, { enunciado, opciones, temas, dificult
   else lote.set(ref, { ...datos, creado: serverTimestamp(), creadoPor: auth.currentUser?.uid || null });
   lote.set(doc(db, "respuestas", ref.id), { correcta, explicacion });
   await lote.commit();
+  // Si la pregunta ya estaba en algún test, se actualiza su copia.
+  if (id) await sincronizarPregunta({ id, enunciado, opciones, temas }, { correcta, explicacion });
   return ref.id;
 }
 
-/** Borra la pregunta y su respuesta. (Paso 5: también la quitará de los tests que la usen.) */
+/** Borra la pregunta y su respuesta, y la quita de los tests que la usen. */
 export async function eliminarPregunta(id) {
+  await quitarPreguntaDeTests(id);
   const lote = writeBatch(db);
   lote.delete(doc(db, "preguntas", id));
   lote.delete(doc(db, "respuestas", id));

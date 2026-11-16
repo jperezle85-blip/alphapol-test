@@ -6,6 +6,8 @@ import {
   vistaSolicitudes, vistaAlumnos, vistaPromociones, vistaProfesores, vistaMiCuenta, pintarMisCursos,
 } from "./gestion.js";
 import { vistaPreguntas } from "./preguntas.js";
+import { vistaTestsProfesor } from "./tests-profesor.js";
+import { vistaMisTests, pintarResumenAlumno } from "./tests-alumno.js";
 
 // Secciones de cada rol. "paso" = en qué paso del plan se construye (las que aún no existen).
 const SECCIONES_STAFF = [
@@ -14,14 +16,14 @@ const SECCIONES_STAFF = [
   { id: "alumnos", label: "Alumnos", desc: "Alta de alumnos, sus promociones y acceso a su cuenta." },
   { id: "promociones", label: "Promociones", desc: "Crear, editar y eliminar los cursos que aparecen en la web." },
   { id: "preguntas", label: "Preguntas", desc: "Banco de preguntas por tema y dificultad, y temario oficial (45 temas en 3 bloques)." },
-  { id: "tests", label: "Tests", paso: 5, desc: "Crear tests cerrados y asignarlos a una o varias promociones." },
+  { id: "tests", label: "Tests", desc: "Crear tests al azar por tema, bloque o general, retocarlos y publicarlos para tus promociones." },
 ];
 const MENU = {
   admin: [...SECCIONES_STAFF, { id: "profesores", label: "Profesores", desc: "Alta y desactivación de profesores." }, { id: "cuenta", label: "Mi cuenta" }],
   profesor: [...SECCIONES_STAFF, { id: "cuenta", label: "Mi cuenta" }],
   alumno: [
     { id: "inicio", label: "Inicio" },
-    { id: "tests", label: "Mis tests", paso: 5, desc: "Los tests que tu profesor ha asignado a tus promociones." },
+    { id: "tests", label: "Mis tests", desc: "Los tests de tus promociones, con corrección al momento y explicación de cada respuesta." },
     { id: "amedida", label: "A medida", paso: "v2", desc: "Elige temas y número de preguntas y genera tu propio test." },
     { id: "simulacro", label: "Simulacro", paso: "v2", desc: "Examen completo: 100 preguntas en 50 minutos, de todo el temario." },
     { id: "progreso", label: "Progreso", paso: "v2", desc: "Historial de tests, notas y evolución por temas." },
@@ -97,6 +99,7 @@ export function pintarCampus(root, usuario, seccion, ctx = {}) {
     case "promociones": vistaPromociones(vista, ctx); break;
     case "profesores": vistaProfesores(vista, ctx); break;
     case "preguntas": vistaPreguntas(vista, ctx); break;
+    case "tests": esStaff(usuario) ? vistaTestsProfesor(vista, ctx) : vistaMisTests(vista, usuario); break;
     case "cuenta": vistaMiCuenta(vista, usuario); break;
     default: vista.innerHTML = vistaPendiente(s);
   }
@@ -134,10 +137,12 @@ function vistaInicio(vista, usuario, menu, ctx) {
     vista.innerHTML = `
       <h1 class="titulo">Hola${nombre ? ", " + nombre : ""}</h1>
       <p class="intro">Aquí encontrarás los tests de tus cursos y podrás ver tu progreso.</p>
+      <div id="resumen" class="bloque-campus"></div>
       <h2 class="seccion-tit">Mis promociones</h2>
       <div id="mis-cursos" class="bloque-campus"><div class="spinner"></div></div>
       <div class="rejilla">${accesos}</div>`;
     pintarMisCursos(document.getElementById("mis-cursos"), usuario);
+    pintarResumenAlumno(document.getElementById("resumen"), usuario);
     return;
   }
 

@@ -29,15 +29,23 @@ export async function guardarCurso(id, { nombre, descripcion, precio }) {
   return ref.id;
 }
 
-/** Elimina la promoción, la quita de los alumnos inscritos y borra sus solicitudes. Los tests se conservan. */
+/**
+ * Elimina la promoción: la quita de los alumnos inscritos y de los tests asignados, borra sus
+ * solicitudes y los resultados (intentos) hechos en ella. Los tests se conservan.
+ */
 export async function eliminarCurso(id) {
-  const [inscritos, solicitudes] = await Promise.all([
+  const [inscritos, solicitudes, tests, intentos] = await Promise.all([
     getDocs(query(collection(db, "users"), where("cursos", "array-contains", id))),
     getDocs(query(collection(db, "solicitudes"), where("cursoId", "==", id))),
+    getDocs(query(collection(db, "tests"), where("cursos", "array-contains", id))),
+    getDocs(query(collection(db, "intentos"), where("cursos", "array-contains", id))),
   ]);
   const lote = writeBatch(db);
   inscritos.docs.forEach((d) => lote.update(d.ref, { cursos: arrayRemove(id) }));
   solicitudes.docs.forEach((d) => lote.delete(d.ref));
+  tests.docs.forEach((d) => lote.update(d.ref, { cursos: arrayRemove(id) }));
+  // Un intento hecho en varias promociones a la vez solo se borra cuando no queda ninguna.
+  intentos.docs.forEach((d) => ((d.data().cursos || []).length > 1 ? lote.update(d.ref, { cursos: arrayRemove(id) }) : lote.delete(d.ref)));
   lote.delete(doc(db, "cursos", id));
   await lote.commit();
   return { alumnos: inscritos.size, solicitudes: solicitudes.size };
