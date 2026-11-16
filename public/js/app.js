@@ -7,7 +7,7 @@
 //   #/privacidad        Política de privacidad (borrador)
 //   #/campus[/seccion]  Campus privado (requiere sesión)
 import {
-  auth, db, PROFESOR_INICIAL,
+  auth, db, ADMIN_INICIAL,
   signOut, onAuthStateChanged,
   doc, getDoc, setDoc, serverTimestamp,
 } from "./firebase.js";
@@ -29,9 +29,9 @@ async function cargarPerfil(user) {
     return { uid: user.uid, email: user.email, ...snap.data() };
   }
 
-  // Primer acceso del profesor inicial: se crea su perfil automáticamente.
-  if ((user.email || "").toLowerCase() === PROFESOR_INICIAL) {
-    const perfil = { nombre: "Profesor", email: user.email, rol: "profesor", activo: true, creado: serverTimestamp(), ultimoAcceso: serverTimestamp() };
+  // Primer acceso del administrador inicial: se crea su perfil automáticamente.
+  if ((user.email || "").toLowerCase() === ADMIN_INICIAL) {
+    const perfil = { nombre: "Administrador", apellidos: "", email: user.email, rol: "admin", activo: true, cursos: [], creado: serverTimestamp(), ultimoAcceso: serverTimestamp() };
     await setDoc(ref, perfil);
     return { uid: user.uid, ...perfil };
   }
@@ -61,7 +61,7 @@ function pintar() {
       return pintarAcceso(root);
     case "campus":
       if (!usuario) { location.hash = "#/acceso"; return; }
-      return pintarCampus(root, usuario, param || "inicio", invalidarCursos);
+      return pintarCampus(root, usuario, param || "inicio", { invalidarCursos });
     default:
       location.hash = "#/";
   }

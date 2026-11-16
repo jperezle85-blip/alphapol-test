@@ -15,7 +15,9 @@ public/                  Lo que se publica en la web
   js/firebase.js         Conexión con Firebase
   js/app.js              Rutas (#/...) y sesión
   js/publico.js          Web pública: Inicio, Cursos, inscripción, acceso, privacidad
-  js/campus.js           Campus privado: paneles de profesor y alumno
+  js/campus.js           Campus privado: menú por rol e Inicio
+  js/gestion.js          Pantallas de gestión: Solicitudes, Alumnos, Promociones, Profesores, Mi cuenta
+  js/datos.js            Lectura y escritura en Firestore (altas de cuentas incluidas)
   js/util.js             Utilidades e iconos
   img/                   Logo, icono y fotos de la academia (con su permiso)
 firestore.rules          Reglas de seguridad de la base de datos
@@ -37,7 +39,7 @@ firebase.json            Configuración de Firebase Hosting
 
 ## Datos (Firestore)
 
-- `users/{uid}`: `{ nombre, apellidos, email, rol: "profesor" | "alumno", activo, creado, ultimoAcceso }`
+- `users/{uid}`: `{ nombre, apellidos, email, rol: "admin" | "profesor" | "alumno", cursos: [ids], activo, creado, ultimoAcceso }`
 - `cursos/{id}`: `{ nombre, descripcion, precio, creado }` — lectura pública. `precio: null` se muestra como "XXX €".
 - `solicitudes/{id}`: `{ cursoId, cursoNombre, nombre, apellidos, email, uid?, estado: "pendiente", aceptaPrivacidad, creado }`
   — cualquiera puede crearla (formulario público, con validación en las reglas); solo los profesores la leen.
@@ -47,13 +49,21 @@ firebase.json            Configuración de Firebase Hosting
 - Sin inscripción no hay cuenta: la cuenta se crea **al aprobar** la solicitud y el alumno recibe un email para crear su contraseña.
 - Un alumno puede estar en varias promociones. Un alumno con cuenta solicita otro curso desde la ficha del curso, sin rellenar datos.
 - Al eliminar una promoción se borran sus inscripciones y resultados; la cuenta del alumno y los tests se conservan.
-- Profesores: los da de alta el administrador.
+- Roles: **administrador** (todo + alta/desactivación de profesores), **profesor** (solicitudes, alumnos, promociones, preguntas, tests) y **alumno**.
+- Profesores: los da de alta el administrador desde el portal (pantalla Profesores).
+- Rechazar una solicitud = eliminarla (sin aviso al alumno).
+- Las cuentas no se borran desde el portal: se **desactivan** (no pueden entrar).
+- El profesor puede corregir nombre y apellidos del alumno; el email solo se cambia desde la consola de Firebase.
+- "Mi cuenta": datos, promociones del alumno y cambio de contraseña por email.
+- Las altas de cuentas se hacen desde el navegador con una segunda conexión a Firebase (sin cerrar la sesión del profesor)
+  y se envía el email de "restablecer contraseña" para que el usuario cree la suya.
+- Tipografía: Montserrat (titulares y marca) + Source Sans 3 (texto).
 
 ## Plan de la v1
 
 1. ✅ Base: login con roles e imagen de marca
 2. ✅ Web pública (Inicio, Cursos con inscripción por solicitud, privacidad en borrador)
-3. Roles (administrador/profesor/alumno) y gestión de promociones, solicitudes y alumnos
+3. ✅ Roles (administrador/profesor/alumno) y gestión de promociones, solicitudes, alumnos y profesores; Mi cuenta
 4. Temario precargado y banco de preguntas
 5. Tests cerrados (temporizador, corrección A − E/2, nota sobre 10, revisión)
 6. Importación de preguntas desde Excel

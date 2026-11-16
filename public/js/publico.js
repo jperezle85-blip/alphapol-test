@@ -126,10 +126,6 @@ export async function pintarInicio(root, usuario) {
         <img src="img/fisica.jpg" alt="Entrenamiento de preparación física" loading="lazy">
         <div><h3>${icono("fisico")}Preparación física</h3><p>Entrenamiento por objetivos para las pruebas físicas, con correcciones técnicas.</p></div>
       </article>
-      <article class="pilar pilar-texto">
-        <div><h3>${icono("escudo")}Experiencia real</h3><p>Más de 20 años de experiencia y un equipo con trayectoria en unidades operativas de la Policía Nacional.</p>
-        <a href="${ACADEMIA.web}" target="_blank" rel="noopener" class="enlace-flecha">Conoce la academia en alphapol.es ${icono("flecha")}</a></div>
-      </article>
     </div>
   </section>
 
@@ -199,7 +195,10 @@ export async function pintarCurso(root, usuario, id) {
 
 function formularioInscripcion(curso, usuario) {
   if (usuario && usuario.rol !== "alumno") {
-    return `<div class="tarjeta-form"><h2>Inscripción</h2><p class="nota">Has iniciado sesión como <strong>${esc(usuario.rol)}</strong>. La inscripción es para alumnos.</p></div>`;
+    return `<div class="tarjeta-form"><h2>Inscripción</h2><p class="nota">Has iniciado sesión con una cuenta de <strong>${usuario.rol === "admin" ? "administrador" : "profesor"}</strong>. La inscripción es para alumnos.</p></div>`;
+  }
+  if (usuario && (usuario.cursos || []).includes(curso.id)) {
+    return `<div class="tarjeta-form"><h2>Ya estás inscrito</h2><p class="nota">Tienes este curso en tu campus.</p><a href="#/campus" class="btn btn-oro">Ir a mi campus</a></div>`;
   }
   if (usuario) {
     return `

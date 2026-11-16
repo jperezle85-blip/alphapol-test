@@ -2,6 +2,11 @@ rules_version = '2';
 
 // Reglas de seguridad de Alphapol.
 // Se publican con: npx firebase-tools deploy --only firestore:rules
+//
+// Roles (campo "rol" en users/{uid}):
+//   admin    → todo lo del profesor + alta y desactivación de profesores
+//   profesor → promociones, solicitudes y alumnos
+//   alumno   → solo su propia ficha
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -9,49 +14,67 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function esProfesor() {
+    function miFicha() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Personal de la academia activo (profesor o administrador).
+    function esStaff() {
       return conectado()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'profesor';
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && miFicha().rol in ['profesor', 'admin']
+        && miFicha().get('activo', true) == true;
+    }
+
+    function esAdmin() {
+      return esStaff() && miFicha().rol == 'admin';
     }
 
     function texto(v, max) {
       return v is string && v.size() > 0 && v.size() <= max;
     }
 
-    // ---------- Perfiles: users/{uid} ----------
-    // { nombre, apellidos, email, rol, activo, creado, ultimoAcceso }
+    // ---------- Fichas de usuario: users/{uid} ----------
+    // { nombre, apellidos, email, rol, cursos: [ids], activo, creado, ultimoAcceso }
     match /users/{uid} {
-      // Cada uno lee su perfil; los profesores leen todos.
-      allow read: if conectado() && (request.auth.uid == uid || esProfesor());
+      // Cada uno lee su ficha; el personal lee todas.
+      allow read: if conectado() && (request.auth.uid == uid || esStaff());
 
-      // Altas: solo un profesor. Excepción: el profesor inicial
-      // se crea su propio perfil de profesor la primera vez que entra.
-      allow create: if esProfesor()
+      allow create: if
+        // El administrador da de alta a cualquiera (profesores incluidos).
+        esAdmin()
+        // Un profesor solo da de alta alumnos.
+        || (esStaff() && request.resource.data.rol == 'alumno')
+        // El administrador inicial se crea su propia ficha la primera vez que entra.
         || (conectado()
             && request.auth.uid == uid
             && request.auth.token.email == 'jperezle85@gmail.com'
-            && request.resource.data.rol == 'profesor');
+            && request.resource.data.rol == 'admin');
 
-      // Cambios: profesores. Cada usuario solo puede actualizar su fecha de último acceso.
-      allow update: if esProfesor()
+      allow update: if
+        esAdmin()
+        // Un profesor gestiona alumnos, pero no puede convertirlos en profesores.
+        || (esStaff() && resource.data.rol == 'alumno' && request.resource.data.rol == 'alumno')
+        // Cada usuario solo puede actualizar su fecha de último acceso.
         || (conectado()
             && request.auth.uid == uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimoAcceso'])
             && request.resource.data.ultimoAcceso == request.time);
 
-      allow delete: if esProfesor();
+      // Las cuentas no se borran desde el portal (se desactivan).
+      allow delete: if esAdmin();
     }
 
-    // ---------- Cursos (promociones): cursos/{id} ----------
-    // { nombre, descripcion, precio, creado }. Públicos para mostrarlos en la web.
+    // ---------- Promociones: cursos/{id} ----------
+    // { nombre, descripcion, precio, creado }. Públicas para mostrarlas en la web.
     match /cursos/{id} {
       allow read: if true;
-      allow write: if esProfesor();
+      allow write: if esStaff();
     }
 
     // ---------- Solicitudes de inscripción: solicitudes/{id} ----------
-    // Cualquiera puede ENVIAR una solicitud (formulario público), pero nadie
-    // salvo los profesores puede leerlas, modificarlas o borrarlas.
+    // Cualquiera puede ENVIAR una solicitud (formulario público), pero solo
+    // el personal puede leerlas, aprobarlas o rechazarlas.
     match /solicitudes/{id} {
       allow create: if request.resource.data.keys().hasOnly(
             ['cursoId', 'cursoNombre', 'nombre', 'apellidos', 'email', 'uid', 'estado', 'aceptaPrivacidad', 'creado'])
@@ -72,7 +95,7 @@ service cloud.firestore {
                 && request.resource.data.uid == request.auth.uid
                 && request.resource.data.email == request.auth.token.email));
 
-      allow read, update, delete: if esProfesor();
+      allow read, update, delete: if esStaff();
     }
 
     // Todo lo demás, cerrado por defecto hasta que lo construyamos.
