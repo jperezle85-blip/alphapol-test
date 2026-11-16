@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// Reglas de seguridad de Alphapol.
+// Se publican con: npx firebase-tools deploy --only firestore:rules
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function conectado() {
+      return request.auth != null;
+    }
+
+    function esProfesor() {
+      return conectado()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol == 'profesor';
+    }
+
+    function texto(v, max) {
+      return v is string && v.size() > 0 && v.size() <= max;
+    }
+
+    // ---------- Perfiles: users/{uid} ----------
+    // { nombre, apellidos, email, rol, activo, creado, ultimoAcceso }
+    match /users/{uid} {
+      // Cada uno lee su perfil; los profesores leen todos.
+      allow read: if conectado() && (request.auth.uid == uid || esProfesor());
+
+      // Altas: solo un profesor. Excepción: el profesor inicial
+      // se crea su propio perfil de profesor la primera vez que entra.
+      allow create: if esProfesor()
+        || (conectado()
+            && request.auth.uid == uid
+            && request.auth.token.email == 'jperezle85@gmail.com'
+            && request.resource.data.rol == 'profesor');
+
+      // Cambios: profesores. Cada usuario solo puede actualizar su fecha de último acceso.
+      allow update: if esProfesor()
+        || (conectado()
+            && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimoAcceso'])
+            && request.resource.data.ultimoAcceso == request.time);
+
+      allow delete: if esProfesor();
+    }
+
+    // ---------- Cursos (promociones): cursos/{id} ----------
+    // { nombre, descripcion, precio, creado }. Públicos para mostrarlos en la web.
+    match /cursos/{id} {
+      allow read: if true;
+      allow write: if esProfesor();
+    }
+
+    // ---------- Solicitudes de inscripción: solicitudes/{id} ----------
+    // Cualquiera puede ENVIAR una solicitud (formulario público), pero nadie
+    // salvo los profesores puede leerlas, modificarlas o borrarlas.
+    match /solicitudes/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['cursoId', 'cursoNombre', 'nombre', 'apellidos', 'email', 'uid', 'estado', 'aceptaPrivacidad', 'creado'])
+        && request.resource.data.keys().hasAll(
+            ['cursoId', 'cursoNombre', 'nombre', 'apellidos', 'email', 'estado', 'aceptaPrivacidad', 'creado'])
+        && texto(request.resource.data.nombre, 60)
+        && texto(request.resource.data.apellidos, 80)
+        && texto(request.resource.data.email, 120)
+        && request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')
+        && texto(request.resource.data.cursoNombre, 150)
+        && exists(/databases/$(database)/documents/cursos/$(request.resource.data.cursoId))
+        && request.resource.data.estado == 'pendiente'
+        && request.resource.data.aceptaPrivacidad == true
+        && request.resource.data.creado == request.time
+        // Si viene de un alumno con sesión, uid y email deben ser los suyos.
+        && (!('uid' in request.resource.data)
+            || (conectado()
+                && request.resource.data.uid == request.auth.uid
+                && request.resource.data.email == request.auth.token.email));
+
+      allow read, update, delete: if esProfesor();
+    }
+
+    // Todo lo demás, cerrado por defecto hasta que lo construyamos.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
